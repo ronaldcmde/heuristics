@@ -15,12 +15,6 @@ def main():
 
         # Enter NumPy
         w = calculate_distances(coords)
-
-        for i in range(0, w.shape[0]):
-            row = ""
-            for j in range(0, w.shape[1]):
-                row += str(w[i, j]) + " - " 
-            print(row)            
         
 
 def readFile(path):
@@ -52,7 +46,7 @@ def calculate_distances(points):
 
     for i in range(0, n): 
         for j in range(0, i):
-            w[i, j] = distance(points[i], points[j])
+            w[i, j] = w[j, i] = distance(points[i], points[j])
 
     return w
 
@@ -65,15 +59,11 @@ def distance(a, b):
     return math.sqrt(math.pow(x1 - x0, 2) + math.pow(y1 - y0, 2))
 
 
-if __name__ == "__main__": 
+if __name__ == "__main__":
     (R, coords, q) = readFile(directory + "test")
 
     # Enter NumPy
     w = calculate_distances(coords)
     print(w.shape)
 
-    for i in range(0, w.shape[0]):
-        row = ""
-        for j in range(0, w.shape[1]):
-            row += str(w[i, j]) + " - " 
-        print(row)
+    print(w)
