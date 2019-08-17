@@ -6,7 +6,7 @@ import numpy as np
 import math
 import operator
 
-directory = "resources/"
+directory = "test/"
 
 def main():
     onlyfiles = [file for file in listdir(directory) if isfile(join(directory, file))]
@@ -52,11 +52,10 @@ def main():
                     visited[c[0]], visited[c[1]] = (True, True)
                     idx += 1
                     routes[idx] = ([c[0],c[1]])
-                    vehicleCap = 200 #vehicleCapacities[idx]
-                    
+                    vehicleCap = max(vehicleCapacities) # vehicleCapacities[idx]
                     break
             
-            # Step 4 -- Finding a feasible cust that is either at the start or end of previous route
+            # Step 4 -- Finding a feasible cost that is either at the start or end of previous route
             for c in cost_pairs:
                 res = inPrevious(c[0], routes[idx])
 
@@ -80,17 +79,62 @@ def main():
             # Step 6 -- Repeat 3, 4, 5 till all customers are added to some route (while)
         checkSolution(routes, visited, customerPositionsDemand, vehicleCapacities)
 
+        # Optimize and Merge
+        
+        for c in cost_pairs:
+            route_i = identify_route(routes, c[0])
+            route_j = identify_route(routes, c[1])
+
+            if (route_i != route_j and route_i != None and route_j != None):
+                res_i = inPrevious(c[0], routes[route_i])
+                res_j = inPrevious(c[1], routes[route_j])
+                if (res_i != -1 and res_j != -1):
+                    total = route_total(routes[route_i], customerPositionsDemand) + route_total(routes[route_j], customerPositionsDemand)
+                    if (total <= max(vehicleCapacities)):
+                        ## How Do I merge routes ?? This way ->
+                        if (res_i == 1 and res_j == 1):
+                            routes[route_i].extend(routes[route_j][::-1])
+                            del routes[route_j]
+                        elif (res_i == 1 and res_j == 0):
+                            routes[route_j].extend(routes[route_i])
+                            del routes[route_i]
+                        elif (res_i == 0 and res_j == 1):
+                            routes[route_i].extend(routes[route_j])
+                            del routes[route_j]
+                        elif (res_i == 0 and res_j == 0):
+                            routes[route_i].extend(routes[route_j][::-1])
+                            del routes[route_j]
+        
+        checkSolution(routes, visited, customerPositionsDemand, vehicleCapacities)
+
+
+def route_total(route, customerPositionsDemand):
+    totalRoute = 0
+    for node in route:
+        print(node)
+        totalRoute += customerPositionsDemand[node]
+    return totalRoute
+
+def identify_route(routes, new):
+    for i, items in routes.iteritems():
+                if new in items:
+                    return i
 
 def checkSolution(routes, visited, customerPositionsDemand, vehicleCapacities):
     totalCapacity = 0
+    print(vehicleCapacities)
     for route in routes:
         totalRoute = 0
+        
         for node in routes[route]:
             totalRoute += customerPositionsDemand[node]
         totalCapacity += totalRoute
         
+        print(route, " --> ", routes[route], "Capacity --> ", totalRoute)
+    
     if not False in visited.values(): print("All nodes visited")
     else: print("Not all nodes visited")
+
     print("Number of kids picked up ", totalCapacity, " out of ", sum(customerPositionsDemand.values()))
     print("Number of routes", len(routes), " out of ", len(vehicleCapacities))
 
