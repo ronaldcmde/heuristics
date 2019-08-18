@@ -6,7 +6,7 @@ import numpy as np
 import math
 import operator
 
-directory = "test/"
+directory = "resources/"
 
 def main():
     onlyfiles = [file for file in listdir(directory) if isfile(join(directory, file))]
@@ -52,7 +52,7 @@ def main():
                     visited[c[0]], visited[c[1]] = (True, True)
                     idx += 1
                     routes[idx] = ([c[0],c[1]])
-                    vehicleCap = max(vehicleCapacities) # vehicleCapacities[idx]
+                    vehicleCap = max(vehicleCapacities)
                     break
             
             # Step 4 -- Finding a feasible cost that is either at the start or end of previous route
@@ -77,7 +77,7 @@ def main():
                 # Step 5 -- Repeat 4 till no customer can be added to the route (for)
 
             # Step 6 -- Repeat 3, 4, 5 till all customers are added to some route (while)
-        checkSolution(routes, visited, customerPositionsDemand, vehicleCapacities)
+        
 
         # Optimize and Merge
         
@@ -111,7 +111,6 @@ def main():
 def route_total(route, customerPositionsDemand):
     totalRoute = 0
     for node in route:
-        print(node)
         totalRoute += customerPositionsDemand[node]
     return totalRoute
 
@@ -130,7 +129,7 @@ def checkSolution(routes, visited, customerPositionsDemand, vehicleCapacities):
             totalRoute += customerPositionsDemand[node]
         totalCapacity += totalRoute
         
-        print(route, " --> ", routes[route], "Capacity --> ", totalRoute)
+        print("Capacity --> ", totalRoute)
     
     if not False in visited.values(): print("All nodes visited")
     else: print("Not all nodes visited")
