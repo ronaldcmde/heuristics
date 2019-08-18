@@ -35,30 +35,38 @@ def main():
 
 
         # Improved savings method. Refer to: 
-        # http://ieeexplore.ieee.org/document/7784340/?reload=true
+        # http://ieeexplore.ieee.org/document/7784340
         
         # Step 1 & 2-- Calculate savings using distances
+        
         savings = calculate_savings(depot, demand_nodes)
         savings = sorted(savings.items(),key=operator.itemgetter(1),reverse=True)
         cost_pairs = list()
 
         for i in range(len(savings)):
             cost_pairs.append(savings[i][0])
-
-        while(False in visited.values()):
+        
+        
+        
+        success = True
+        while(False in visited.values() and success):
+            
             # Step 3 -- Choose two customers for the initial route
+            
             for c in cost_pairs:
                 if (visited[c[0]] == False and visited[c[1]] == False):
                     visited[c[0]], visited[c[1]] = (True, True)
                     idx += 1
                     routes[idx] = ([c[0],c[1]])
                     vehicleCap = max(vehicleCapacities)
+                    success = True
                     break
+                else: success = False
+
             
             # Step 4 -- Finding a feasible cost that is either at the start or end of previous route
             for c in cost_pairs:
                 res = inPrevious(c[0], routes[idx])
-
                 if (res == 0 and capacityValid(routes[idx], c[0], customerPositionsDemand, vehicleCap) and visited[c[0]] == False):
                     visited[c[1]] = True
                     routes[idx].append(c[1])
@@ -74,8 +82,9 @@ def main():
                         visited[c[0]] = True
                         routes[idx].insert(0, c[0])
 
+            
                 # Step 5 -- Repeat 4 till no customer can be added to the route (for)
-
+        
             # Step 6 -- Repeat 3, 4, 5 till all customers are added to some route (while)
         
 
@@ -105,8 +114,22 @@ def main():
                             routes[route_i].extend(routes[route_j][::-1])
                             del routes[route_j]
         
-        checkSolution(routes, visited, customerPositionsDemand, vehicleCapacities)
+        checkSolution(routes, visited, customerPositionsDemand, vehicleCapacities, K['V'])
 
+def Z(routes, vehicleCapacities, vehicleVelocities, customerPositionsDemand):
+    Z = 0
+    for route_index in routes:
+        total = route_total(routes[route_index], customerPositionsDemand)
+        diff = []
+        for i in vehicleCapacities:
+            diff.append(abs(i - total))
+        index = diff.index(min(diff))
+        v = 1 / vehicleVelocities[index]
+        for (a, b) in zip(routes[route_index][0:len(routes[route_index]) - 1], routes[route_index][1:]):
+            d = distance(a, b)
+            t = d * v
+            Z += t
+    return Z
 
 def route_total(route, customerPositionsDemand):
     totalRoute = 0
@@ -119,7 +142,7 @@ def identify_route(routes, new):
                 if new in items:
                     return i
 
-def checkSolution(routes, visited, customerPositionsDemand, vehicleCapacities):
+def checkSolution(routes, visited, customerPositionsDemand, vehicleCapacities, vehicleVelocities):
     totalCapacity = 0
     print(vehicleCapacities)
     for route in routes:
@@ -136,6 +159,7 @@ def checkSolution(routes, visited, customerPositionsDemand, vehicleCapacities):
 
     print("Number of kids picked up ", totalCapacity, " out of ", sum(customerPositionsDemand.values()))
     print("Number of routes", len(routes), " out of ", len(vehicleCapacities))
+    print("Z = ", Z(routes, vehicleCapacities, vehicleVelocities, customerPositionsDemand))
 
 def capacityValid(existing, new, customerPositionsDemand, vehicleCap):
     totalCap = customerPositionsDemand[new]
