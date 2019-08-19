@@ -8,119 +8,141 @@ import operator
 
 directory = "resources/"
 
-
 def main():
     instance_number = 0
     onlyfiles = [file for file in listdir(directory) if isfile(join(directory, file))]
-    instance_number += 1
 
     for file in onlyfiles: 
-        (K, customerPositions, demands) = read_file(directory + file)
+        instance_number += 1
+        (R, customerPositions, demands) = read_file(directory + file)
 
-        # de aqui a abajo un homogeneo
-
-
-        # Initialization
         demand_nodes = customerPositions[1:]
         numberOfCustomers = len(customerPositions) - 1
-        vehicleCapacities = K['Q']
         depot = customerPositions[0]
         pointsLen = len(customerPositions)
-        routes = dict()
-        idx = -1 # route number
-        vehicleCap = 0
 
         # None of the customers have been visited
         visited = dict()
         for c in demand_nodes: visited[c] = False
-        
+
         # build (x, y) -> demand
         customerPositionsDemand = dict()
         for (coord, demand) in zip(demand_nodes, demands[1:]):
             customerPositionsDemand[coord] = demand
 
+        routes = dict()
+        idx = -1 # route number
+
+
+        M = 0
+        total_capacities = []
+        total_velocities = []
+        for i in R:
+            M += len(R[i]['Q'])
+            total_capacities.extend(R[i]['Q'])
+            total_velocities.extend(R[i]['V'])
 
         # Improved savings method. Refer to: 
         # http://ieeexplore.ieee.org/document/7784340
         
         # Step 1 & 2-- Calculate savings using distances
         
+        # Initialization
         savings = calculate_savings(depot, demand_nodes)
         savings = sorted(savings.items(),key=operator.itemgetter(1),reverse=True)
         cost_pairs = list()
 
-        for i in range(len(savings)):
-            cost_pairs.append(savings[i][0])
-        
-        success = True
-        while(False in visited.values() and success):
+        for k in range(len(savings)):
+            cost_pairs.append(savings[k][0])
+    
+        # de aqui a abajo un homogeneo por cada tipo de vehiculo
+        sol = dict()
+        for i in R:
+            K = R[i]
             
-            # Step 3 -- Choose two customers for the initial route
+            vehicleCapacities = K['Q']
             
-            for c in cost_pairs:
-                if (visited[c[0]] == False and visited[c[1]] == False):
-                    visited[c[0]], visited[c[1]] = (True, True)
-                    idx += 1
-                    routes[idx] = ([c[0],c[1]])
-                    vehicleCap = max(vehicleCapacities) # Aqui con el minimo 
-                    success = True
-                    break
-                else: success = False
-
-            # Step 4 -- Finding a feasible cost that is either at the start or end of previous route
-            for c in cost_pairs:
-                res = in_previous(c[0], routes[idx])
-                if (res == 0 and capacity_valid(routes[idx], c[0], customerPositionsDemand, vehicleCap) and visited[c[0]] == False):
-                    visited[c[1]] = True
-                    routes[idx].append(c[1])
-                elif (res == 1 and capacity_valid(routes[idx], c[0], customerPositionsDemand, vehicleCap) and visited[c[0]] == False):
-                    visited[c[1]] = True
-                    routes[idx].insert(0, c[1])
-                else: 
-                    res = in_previous(c[1], routes[idx])
+            vehicleCap = vehicleCapacities[0]
+            success = True
+            local_i = 0
+            while(success and (False in visited.values() and local_i <= len(vehicleCapacities))):                
+                # Step 3 -- Choose two customers for the initial route
+                for c in cost_pairs:
+                    if (visited[c[0]] == False and visited[c[1]] == False):
+                        visited[c[0]], visited[c[1]] = (True, True)
+                        local_i += 1
+                        idx += 1
+                        routes[idx] = ([c[0],c[1]])
+                        success = True
+                        break
+                    else: success = False     
+                
+                if (not success): continue
+                
+                # Step 4 -- Finding a feasible cost that is either at the start or end of previous route
+                
+                for c in cost_pairs:
+                    res = in_previous(c[0], routes[idx])
                     if (res == 0 and capacity_valid(routes[idx], c[0], customerPositionsDemand, vehicleCap) and visited[c[0]] == False):
-                        visited[c[0]] = True
-                        routes[idx].append(c[0])
+                        visited[c[1]] = True
+                        routes[idx].append(c[1])
                     elif (res == 1 and capacity_valid(routes[idx], c[0], customerPositionsDemand, vehicleCap) and visited[c[0]] == False):
-                        visited[c[0]] = True
-                        routes[idx].insert(0, c[0])
+                        visited[c[1]] = True
+                        routes[idx].insert(0, c[1])
+                    else: 
+                        res = in_previous(c[1], routes[idx])
+                        if (res == 0 and capacity_valid(routes[idx], c[0], customerPositionsDemand, vehicleCap) and visited[c[0]] == False):
+                            visited[c[0]] = True
+                            routes[idx].append(c[0])
+                        elif (res == 1 and capacity_valid(routes[idx], c[0], customerPositionsDemand, vehicleCap) and visited[c[0]] == False):
+                            visited[c[0]] = True
+                            routes[idx].insert(0, c[0])
 
                 # Step 5 -- Repeat 4 till no customer can be added to the route (for)
         
-            # Step 6 -- Repeat 3, 4, 5 till all customers are added to some route (while)
+                
         
-        # Assign routes to vehicles and Merge
-        for c in cost_pairs:
-            route_i = identify_route(routes, c[0])
-            route_j = identify_route(routes, c[1])
-            if (route_i != route_j and route_i != None and route_j != None):
-                res_i = in_previous(c[0], routes[route_i])
-                res_j = in_previous(c[1], routes[route_j])
-                if (res_i != -1 and res_j != -1):
-                    total = route_total(routes[route_i], customerPositionsDemand, depot) + route_total(routes[route_j], customerPositionsDemand, depot)
-                    if (total <= max(vehicleCapacities)):
-                        ## How Do I merge routes ?? This way ->
-                        if (res_i == 1 and res_j == 1):
-                            routes[route_i].extend(routes[route_j][::-1])
-                            del routes[route_j]
-                        elif (res_i == 1 and res_j == 0):
-                            routes[route_j].extend(routes[route_i])
-                            del routes[route_i]
-                        elif (res_i == 0 and res_j == 1):
-                            routes[route_i].extend(routes[route_j])
-                            del routes[route_j]
-                        elif (res_i == 0 and res_j == 0):
-                            routes[route_i].extend(routes[route_j][::-1])
-                            del routes[route_j]
+                # Assign routes to vehicles and Merge
+                for c in cost_pairs:
+                    route_i = identify_route(routes, c[0])
+                    route_j = identify_route(routes, c[1])
+                    if (route_i != route_j and route_i != None and route_j != None):
+                        res_i = in_previous(c[0], routes[route_i])
+                        res_j = in_previous(c[1], routes[route_j])
+                        if (res_i != -1 and res_j != -1):
+                            total = route_total(routes[route_i], customerPositionsDemand, depot) + route_total(routes[route_j], customerPositionsDemand, depot)
+                            if (total <= vehicleCap):
+                                ## How Do I merge routes ?? This way ->
+                                if (res_i == 1 and res_j == 1):
+                                    routes[route_i].extend(routes[route_j][::-1])
+                                    del routes[route_j]
+                                elif (res_i == 1 and res_j == 0):
+                                    routes[route_j].extend(routes[route_i])
+                                    del routes[route_i]
+                                elif (res_i == 0 and res_j == 1):
+                                    routes[route_i].extend(routes[route_j])
+                                    del routes[route_j]
+                                elif (res_i == 0 and res_j == 0):
+                                    routes[route_i].extend(routes[route_j][::-1])
+                                    del routes[route_j]
+                # Step 6 -- Repeat 3, 4, 5 till all customers are added to some route (while)
+                arr = []
+                for j in routes:
+                    arr.append(routes[j])
+                sol[i] = (arr)
 
-        check_solution(routes, visited, customerPositionsDemand, vehicleCapacities, K['V'], depot)
-        # output_solution(instance_number, routes, vehicleCapacities, depot)
 
-def output_solution(instance_number, routes, vehicleCapacities, depot):
+        #check_solution(routes, visited, customerPositionsDemand, total_capacities, total_velocities, depot, M)
+        output_solution(instance_number, routes, vehicleCapacities, depot, sol)
+
+def output_solution(instance_number, routes, vehicleCapacities, depot, sol):
     name = "hfccvrp" + str(instance_number) + ".sol"
-    vehicle_type = 0
-    for route_idx in routes:
-        number_of_nodes = len(routes[route_idx])
+    print(name)
+    f= open(name, "w+")
+    for vehicleType in sol:
+        for route in sol[vehicleType]:
+            f.write(str(vehicleType) + " " + str(len(route) + 2) + " " + str((depot, route, depot)) + '\n')
+    f.close()
 
 
 def Z(routes, vehicleCapacities, vehicleVelocities, customerPositionsDemand, depot):
@@ -151,7 +173,7 @@ def identify_route(routes, new):
                 if new in items:
                     return i
 
-def check_solution(routes, visited, customerPositionsDemand, vehicleCapacities, vehicleVelocities, depot):
+def check_solution(routes, visited, customerPositionsDemand, vehicleCapacities, vehicleVelocities, depot, M):
     totalCapacity = 0
     print(vehicleCapacities)
     for route in routes:
@@ -167,7 +189,7 @@ def check_solution(routes, visited, customerPositionsDemand, vehicleCapacities, 
     else: print("Not all nodes visited")
 
     print("Number of kids picked up ", totalCapacity, " out of ", sum(customerPositionsDemand.values()))
-    print("Number of routes", len(routes), " out of ", len(vehicleCapacities))
+    print("Number of routes", len(routes), " out of ", M)
     print("Z = ", Z(routes, vehicleCapacities, vehicleVelocities, customerPositionsDemand, depot))
 
 def capacity_valid(existing, new, customerPositionsDemand, vehicleCap):
@@ -198,10 +220,10 @@ def read_file(path):
             line = file.readline().split('\t')
             n = int(line[0]) # Number of demand nodes
             m = int(line[1]) # Number of types of vehicle 
-            Q = [] # Qk Capacity of vehicle k
-            V = [] # Vk Velocity of vehicle k  
-            types = []
             
+            
+            R = dict()
+
             for i in range(0, m):
                 type = file.readline().split('\t')
                 index = int(type[0])
@@ -209,17 +231,17 @@ def read_file(path):
                 Qk = int(type[2]) # Capacity
                 Vk = float(type[3].replace(',', '.')) # Velocity
                 
+                Q = [] # Qk Capacity of vehicle k
+                V = [] # Vk Velocity of vehicle k 
                 for k in range(0, quantity):
                     Q.append(Qk)
                     V.append(Vk)
-                    types.append(type)
-            
-            
+                
+                R[index] = dict(Q=Q, V=V)
+
             (indexes, x, y, q) = zip(*[line for line in csv.reader(file, delimiter='\t')])
 
             to_int = lambda x: int(x)
-
-            R = dict(Q=Q, V=V)
 
             return (R, zip(list(map(to_int, x)), list(map(to_int, y))), list(map(to_int, q)))
 
