@@ -5,6 +5,8 @@ import csv
 import numpy as np
 import math
 import operator
+import time
+
 
 directory = "resources/"
 
@@ -12,7 +14,8 @@ def main():
     instance_number = 0
     onlyfiles = [file for file in listdir(directory) if isfile(join(directory, file))]
 
-    for file in onlyfiles: 
+    for file in onlyfiles:
+        start_time = time.time()
         instance_number += 1
         (R, customerPositions, demands) = read_file(directory + file)
 
@@ -132,7 +135,7 @@ def main():
                 sol[i] = (arr)
 
 
-        #check_solution(routes, visited, customerPositionsDemand, total_capacities, total_velocities, depot, M)
+        check_solution(routes, visited, customerPositionsDemand, total_capacities, total_velocities, depot, M, time.time() - start_time)
         output_solution(instance_number, routes, vehicleCapacities, depot, sol)
 
 def output_solution(instance_number, routes, vehicleCapacities, depot, sol):
@@ -173,9 +176,9 @@ def identify_route(routes, new):
                 if new in items:
                     return i
 
-def check_solution(routes, visited, customerPositionsDemand, vehicleCapacities, vehicleVelocities, depot, M):
+def check_solution(routes, visited, customerPositionsDemand, vehicleCapacities, vehicleVelocities, depot, M, time):
     totalCapacity = 0
-    print(vehicleCapacities)
+    #print(vehicleCapacities)
     for route in routes:
         totalRoute = 0
         
@@ -183,14 +186,15 @@ def check_solution(routes, visited, customerPositionsDemand, vehicleCapacities, 
             totalRoute += customerPositionsDemand[node]
         totalCapacity += totalRoute
         
-        print("Capacity --> ", totalRoute)
+        #print("Capacity --> ", totalRoute)
     
-    if not False in visited.values(): print("All nodes visited")
-    else: print("Not all nodes visited")
+    #if not False in visited.values(): print("All nodes visited")
+    #else: print("Not all nodes visited")
 
-    print("Number of kids picked up ", totalCapacity, " out of ", sum(customerPositionsDemand.values()))
-    print("Number of routes", len(routes), " out of ", M)
+    #print("Number of kids picked up ", totalCapacity, " out of ", sum(customerPositionsDemand.values()))
+    #print("Number of routes", len(routes), " out of ", M)
     print("Z = ", Z(routes, vehicleCapacities, vehicleVelocities, customerPositionsDemand, depot))
+    print(time)
 
 def capacity_valid(existing, new, customerPositionsDemand, vehicleCap):
     totalCap = customerPositionsDemand[new]
