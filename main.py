@@ -135,7 +135,7 @@ def main():
                 sol[i] = (arr)
 
 
-        check_solution(routes, visited, customerPositionsDemand, total_capacities, total_velocities, depot, M, time.time() - start_time)
+        #check_solution(routes, visited, customerPositionsDemand, total_capacities, total_velocities, depot, M, time.time() - start_time)
         output_solution(instance_number, routes, vehicleCapacities, depot, sol)
 
 def output_solution(instance_number, routes, vehicleCapacities, depot, sol):
@@ -178,7 +178,7 @@ def identify_route(routes, new):
 
 def check_solution(routes, visited, customerPositionsDemand, vehicleCapacities, vehicleVelocities, depot, M, time):
     totalCapacity = 0
-    #print(vehicleCapacities)
+    print(vehicleCapacities)
     for route in routes:
         totalRoute = 0
         
@@ -186,13 +186,13 @@ def check_solution(routes, visited, customerPositionsDemand, vehicleCapacities, 
             totalRoute += customerPositionsDemand[node]
         totalCapacity += totalRoute
         
-        #print("Capacity --> ", totalRoute)
+        print("Capacity --> ", totalRoute)
     
-    #if not False in visited.values(): print("All nodes visited")
-    #else: print("Not all nodes visited")
+    if not False in visited.values(): print("All nodes visited")
+    else: print("Not all nodes visited")
 
-    #print("Number of kids picked up ", totalCapacity, " out of ", sum(customerPositionsDemand.values()))
-    #print("Number of routes", len(routes), " out of ", M)
+    print("Number of kids picked up ", totalCapacity, " out of ", sum(customerPositionsDemand.values()))
+    print("Number of routes", len(routes), " out of ", M)
     print("Z = ", Z(routes, vehicleCapacities, vehicleVelocities, customerPositionsDemand, depot))
     print(time)
 
