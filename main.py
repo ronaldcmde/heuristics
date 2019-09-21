@@ -63,6 +63,8 @@ def main():
                     break
                 else: success = False
 
+            if (not success): continue
+
             
             # Step 4 -- Finding a feasible cost that is either at the start or end of previous route
             for c in cost_pairs:
@@ -88,31 +90,31 @@ def main():
             # Step 6 -- Repeat 3, 4, 5 till all customers are added to some route (while)
         
 
-        # Optimize and Merge
-        
-        for c in cost_pairs:
-            route_i = identify_route(routes, c[0])
-            route_j = identify_route(routes, c[1])
+            # Optimize and Merge
 
-            if (route_i != route_j and route_i != None and route_j != None):
-                res_i = inPrevious(c[0], routes[route_i])
-                res_j = inPrevious(c[1], routes[route_j])
-                if (res_i != -1 and res_j != -1):
-                    total = route_total(routes[route_i], customerPositionsDemand) + route_total(routes[route_j], customerPositionsDemand)
-                    if (total <= max(vehicleCapacities)):
-                        ## How Do I merge routes ?? This way ->
-                        if (res_i == 1 and res_j == 1):
-                            routes[route_i].extend(routes[route_j][::-1])
-                            del routes[route_j]
-                        elif (res_i == 1 and res_j == 0):
-                            routes[route_j].extend(routes[route_i])
-                            del routes[route_i]
-                        elif (res_i == 0 and res_j == 1):
-                            routes[route_i].extend(routes[route_j])
-                            del routes[route_j]
-                        elif (res_i == 0 and res_j == 0):
-                            routes[route_i].extend(routes[route_j][::-1])
-                            del routes[route_j]
+            for c in cost_pairs:
+                route_i = identify_route(routes, c[0])
+                route_j = identify_route(routes, c[1])
+
+                if (route_i != route_j and route_i != None and route_j != None):
+                    res_i = inPrevious(c[0], routes[route_i])
+                    res_j = inPrevious(c[1], routes[route_j])
+                    if (res_i != -1 and res_j != -1):
+                        total = route_total(routes[route_i], customerPositionsDemand) + route_total(routes[route_j], customerPositionsDemand)
+                        if (total <= max(vehicleCapacities)):
+                            ## How Do I merge routes ?? This way ->
+                            if (res_i == 1 and res_j == 1):
+                                routes[route_i].extend(routes[route_j][::-1])
+                                del routes[route_j]
+                            elif (res_i == 1 and res_j == 0):
+                                routes[route_j].extend(routes[route_i])
+                                del routes[route_i]
+                            elif (res_i == 0 and res_j == 1):
+                                routes[route_i].extend(routes[route_j])
+                                del routes[route_j]
+                            elif (res_i == 0 and res_j == 0):
+                                routes[route_i].extend(routes[route_j][::-1])
+                                del routes[route_j]
         
         checkSolution(routes, visited, customerPositionsDemand, vehicleCapacities, K['V'])
 
@@ -144,7 +146,7 @@ def identify_route(routes, new):
 
 def checkSolution(routes, visited, customerPositionsDemand, vehicleCapacities, vehicleVelocities):
     totalCapacity = 0
-    print(vehicleCapacities)
+    #print(vehicleCapacities)
     for route in routes:
         totalRoute = 0
         
@@ -152,13 +154,13 @@ def checkSolution(routes, visited, customerPositionsDemand, vehicleCapacities, v
             totalRoute += customerPositionsDemand[node]
         totalCapacity += totalRoute
         
-        print("Capacity --> ", totalRoute)
+        #print("Capacity --> ", totalRoute)
     
-    if not False in visited.values(): print("All nodes visited")
-    else: print("Not all nodes visited")
+    #if not False in visited.values(): print("All nodes visited")
+    #else: print("Not all nodes visited")
 
-    print("Number of kids picked up ", totalCapacity, " out of ", sum(customerPositionsDemand.values()))
-    print("Number of routes", len(routes), " out of ", len(vehicleCapacities))
+    #print("Number of kids picked up ", totalCapacity, " out of ", sum(customerPositionsDemand.values()))
+    #print("Number of routes", len(routes), " out of ", len(vehicleCapacities))
     print("Z = ", Z(routes, vehicleCapacities, vehicleVelocities, customerPositionsDemand))
 
 def capacityValid(existing, new, customerPositionsDemand, vehicleCap):
