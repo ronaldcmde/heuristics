@@ -6,9 +6,10 @@ import numpy as np
 import math
 import operator
 import time
+import random
 
 
-directory = "resources/"
+directory = "test/"
 
 def main():
     instance_number = 0
@@ -67,7 +68,7 @@ def main():
             vehicle_cap = vehicle_capacities[0]
             success = True
             local_i = 0
-            while(success and (False in visited.values() and local_i <= len(vehicle_capacities))):                
+            while(success and (False in visited.values() and local_i <= len(vehicle_capacities))):
                 # Step 3 -- Choose two customers for the initial route
                 for c in cost_pairs:
                     if (visited[c[0]] == False and visited[c[1]] == False):
@@ -135,16 +136,86 @@ def main():
                     arr.append(routes[j])
                 sol[i] = (arr)
 
+        ''' Calculates the objective function value for an individual route '''
+        def route_z(route):
+            z = 0
+            route.insert(0, depot) # Add the depot at the begining of the route
+            total = route_total(route, customer_position_demand, depot)
+            diff = []
+            for i in total_capacities:
+                diff.append(abs(i - total))
+            index = diff.index(min(diff))
+
+            v = 1 / total_velocities[index]
+
+            for(a, b) in zip(route[0:len(route) - 1], route[1:]):
+                d = distance(a, b)
+                t = d * v
+                z += t
+
+            return z
+
+        ''' metodo recocido simulado '''
+        def simulated_annealing(route, T0=1000, Tf=10, r=0.1, L=10):
+            solucion_actual = route
+            T = T0
+            neighboring = neighborhood(solucion_actual)
+            # definir estructura del vecindario y obtener la mejor solucion
+            while(T > Tf):
+                # 2-opt neighborhood
+                l = 0
+                (i, k) = neighboring.pop()
+                while(l < L):
+                    l += 1
+                    new_route = two_opt_swap(route, i, k) # find s'
+                    d = route_z(new_route) - route_z(route)
+                    if d < 0:
+                        route = new_route
+                    elif(random.uniform(0, 1) < math.exp(-d/T)):
+                        solucion_actual = new_route
+                        neighboring = neighborhood(solucion_actual)
+                T = r * T
+            
+            return solucion_actual                
+
+        def neighborhood(route): 
+            neighboring = []
+            for i in range(0, len(route) - 1):
+                for k in range(i + 1, len(route)):
+                    neighboring.append((i, j))
+            
+            return neighboring
+
+
+        def two_opt_swap(route, i, k):
+            debug = False
+            if(i == 3 and k == 6): debug = True
+
+            new_route = route[0:i] # i bc upper index is exclusive
+            if debug: print(new_route)
+
+            temp = route[i:k+1][::-1] # reverse list k+1 bc upper index is exclusive
+            new_route.extend(temp)
+            if debug: print(new_route)
+
+            new_route.extend(route[k+1:len(route)])
+            if debug: print(new_route)
+
+            return new_route
+
 
         #check_solution(routes, visited, customer_position_demand, total_capacities, total_velocities, depot, M, time.time() - start_time)
-        output_solution(instance_number, routes, vehicle_capacities, depot, sol)
-        ## recocido simulado de
-        simulated_annealing(instance_number, routes, vehicle_capacities, depot, sol)
+        #output_solution(instance_number, routes, vehicle_capacities, depot, sol)
+        
 
-def simulated_annealing(instance_number, routes, vehicle_capacities, depot, sol):
-    print("routes = ", routes)
-    print("sol = ", sol)
-
+        ''' Algoritmos de busqueda local '''
+        for i in sol: 
+            instancia = sol[i]
+            for route in instancia:
+                print("antes")
+                print(route_z(route))
+                print("despues")
+                print(route_z(simulated_annealing(route)))
 
 
 ''' Imprime la solucion en el archivo .sol '''
