@@ -156,29 +156,36 @@ def main():
             return z
 
         ''' metodo recocido simulado '''
-        def simulated_annealing(route, T0=1000, Tf=10, r=0.1, L=10):
+        def simulated_annealing(route, T0=1000, Tf=0.01, r=0.45, L=100):
             solucion_actual = route
             T = T0
-            neighboring = neighborhood(solucion_actual)
             # definir estructura del vecindario y obtener la mejor solucion
+            neighboring = two_opt_neighborhood(solucion_actual)
             while(T > Tf):
                 # 2-opt neighborhood
                 l = 0
-                (i, k) = neighboring.pop()
+                print("Temperature = ", T)
                 while(l < L):
+                    if not neighboring: break
                     l += 1
+                    (i, k) = neighboring.pop()
                     new_route = two_opt_swap(route, i, k) # find s'
-                    d = route_z(new_route) - route_z(route)
+                    d = route_z(new_route[:]) - route_z(route[:])
                     if d < 0:
-                        route = new_route
+                        solucion_actual = new_route
+                        neighboring = two_opt_neighborhood(solucion_actual)
                     elif(random.uniform(0, 1) < math.exp(-d/T)):
                         solucion_actual = new_route
-                        neighboring = neighborhood(solucion_actual)
+                        neighboring = two_opt_neighborhood(solucion_actual)
+                
+                if not neighboring: break
                 T = r * T
             
-            return solucion_actual                
+            return solucion_actual
 
-        def neighborhood(route): 
+
+        ''' Neighborhood using the 2-opt strategy '''
+        def two_opt_neighborhood(route): 
             neighboring = []
             for i in range(0, len(route) - 1):
                 for k in range(i + 1, len(route)):
@@ -212,10 +219,9 @@ def main():
         for i in sol: 
             instancia = sol[i]
             for route in instancia:
-                print("antes")
-                print(route_z(route))
-                print("despues")
-                print(route_z(simulated_annealing(route)))
+                print("antes --> ", route_z(route[:]))
+                print("parametros ", route)
+                print("despues --> ", route_z(simulated_annealing(route, T0=1000, Tf=0.01, r=0.1, L=len(route)**2)))
 
 
 ''' Imprime la solucion en el archivo .sol '''
