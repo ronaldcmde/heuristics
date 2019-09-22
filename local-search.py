@@ -2,6 +2,7 @@ from os import listdir
 from os.path import isfile, join
 
 import csv
+import itertools
 import numpy as np
 import math
 import operator
@@ -168,14 +169,40 @@ def main():
                     if not neighboring: break
                     l += 1
                     (i, k) = neighboring.pop()
-                    new_route = two_opt_swap(route, i, k) # find s'
-                    d = route_z(new_route[:]) - route_z(route[:])
+                    new_route = two_opt_swap(solucion_actual, i, k) # find s'
+                    d = route_z(new_route[:]) - route_z(solucion_actual[:])
                     if d < 0:
                         solucion_actual = new_route
                         neighboring = two_opt_neighborhood(solucion_actual)
                     elif(random.uniform(0, 1) < math.exp(-d/T)):
                         solucion_actual = new_route
                         neighboring = two_opt_neighborhood(solucion_actual)
+                
+                if not neighboring: break
+                T = r * T
+            
+            return solucion_actual
+
+        ''' metodo recocido simulado '''
+        def simulated_annealing_with_permutations(route, T0=1000, Tf=0.01, r=0.45, L=100):
+            solucion_actual = route
+            T = T0
+            # definir estructura del vecindario y obtener la mejor solucion
+            neighboring = itertools.permutations(solucion_actual, len(solucion_actual))
+            while(T > Tf):
+                # 2-opt neighborhood
+                l = 0
+                while(l < L):
+                    if not neighboring: break
+                    l += 1
+                    new_route = neighboring.pop()
+                    d = route_z(new_route[:]) - route_z(solucion_actual[:])
+                    if d < 0:
+                        solucion_actual = new_route
+                        neighboring = itertools.permutations(solucion_actual, len(solucion_actual))
+                    elif(random.uniform(0, 1) < math.exp(-d/T)):
+                        solucion_actual = new_route
+                        neighboring = itertools.permutations(solucion_actual, len(solucion_actual))
                 
                 if not neighboring: break
                 T = r * T
@@ -191,6 +218,10 @@ def main():
                     neighboring.append((i, j))
             
             return neighboring
+
+        ''' Neighbothood using the permutations '''
+        def permutations_neighborhood(route):
+            itertools.permutations(route)
 
 
         def two_opt_swap(route, i, k):
