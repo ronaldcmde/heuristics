@@ -8,7 +8,7 @@ import operator
 import time
 
 
-directory = "test/"
+directory = "resources/"
 
 def main():
     instance_number = 0
