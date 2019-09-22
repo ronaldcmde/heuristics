@@ -164,7 +164,6 @@ def main():
             while(T > Tf):
                 # 2-opt neighborhood
                 l = 0
-                print("Temperature = ", T)
                 while(l < L):
                     if not neighboring: break
                     l += 1
@@ -218,10 +217,18 @@ def main():
         ''' Algoritmos de busqueda local '''
         for i in sol: 
             instancia = sol[i]
+            mejor, peor, igual = 0, 0, 0
             for route in instancia:
-                print("antes --> ", route_z(route[:]))
-                print("parametros ", route)
-                print("despues --> ", route_z(simulated_annealing(route, T0=1000, Tf=0.01, r=0.1, L=len(route)**2)))
+                s = route_z(route[:])
+                s_pr = route_z(simulated_annealing(route, T0=1000, Tf=0.01, r=0.95, L=len(route)**2))
+                print("antes --> ", s, "depues --> ", s_pr)
+                if(s > s_pr): mejor += 1
+                if(s < s_pr): peor += 1 
+                if(s == s_pr): igual +=1
+
+            print("mejor --> ", mejor)
+            print("peor --> ", peor)
+            print("igual --> ", igual)
 
 
 ''' Imprime la solucion en el archivo .sol '''
