@@ -10,7 +10,7 @@ import time
 import random
 
 
-directory = "test/"
+directory = "resources/"
 
 def main():
     instance_number = 0
@@ -132,6 +132,7 @@ def main():
                 
                 
                 # add the calculated routes to the entire solution
+                
                 arr = []
                 for j in routes:
                     arr.append(routes[j])
@@ -163,14 +164,12 @@ def main():
             # definir estructura del vecindario y obtener la mejor solucion
             neighboring = two_opt_neighborhood(solucion_actual[:])
             while(T > Tf):
-                print("len de sol act" , len(solucion_actual))
                 l = 0
                 while(l < L):
                     if not neighboring: break
                     l += 1
                     (i, k) = neighboring.pop()
                     new_route = two_opt_swap(solucion_actual[:], i, k) # find s'
-                    #print("CALCULATED NEW ROUTE", new_route)
                     d = route_z(new_route[:]) - route_z(solucion_actual[:])
                     if d < 0:
                         solucion_actual = new_route
@@ -196,7 +195,7 @@ def main():
                     if not neighboring: break
                     l += 1
                     new_route = list(neighboring.pop())
-                    print("new route", new_route)
+                    
                     d = route_z(new_route[:]) - route_z(solucion_actual[:])
                     if d < 0:
                         solucion_actual = new_route
@@ -240,18 +239,12 @@ def main():
             return neighboring
 
         def two_opt_swap(route, i, k):
-            debug = False
-            if(i == 3 and k == 6): debug = True
-
             new_route = route[0:i] # i bc upper index is exclusive
-            if debug: print(new_route)
 
             temp = route[i:k+1][::-1] # reverse list k+1 bc upper index is exclusive
             new_route.extend(temp)
-            if debug: print(new_route)
 
             new_route.extend(route[k+1:len(route)])
-            if debug: print(new_route)
 
             return new_route
         
@@ -308,17 +301,23 @@ def main():
             instancia = sol[i]
             arr_two_opt = []
             arr_three_opt = []
-            
+
             for route in instancia:
-                #arr_three_opt.append(simulated_annealing_three_opt(route, T0=1000, Tf=0.01, r=0.95, L=len(route)**3))
+                arr_three_opt.append(simulated_annealing_three_opt(route, T0=1000, Tf=0.01, r=0.95, L=len(route)**3))
                 arr_two_opt.append(simulated_annealing(route, T0=1000, Tf=0.01, r=0.95,L=len(route)**2))
             
             sol_three_opt[i] = arr_three_opt
             sol_two_opt[i] = arr_two_opt
         
-        #print(sol)
-        #print(sol_two_opt)
-        #print(sol_three_opt)
+        print("sol  2-opt   3-opt")
+        for i in sol:
+            z_sol = Z(sol[i], total_capacities, total_velocities, customer_position_demand, depot)
+            z_two_opt = Z(sol_two_opt[i], total_capacities, total_velocities, customer_position_demand, depot)
+            z_three_opt = Z(sol_three_opt[i], total_capacities, total_velocities, customer_position_demand, depot)
+            
+            print(z_sol, z_two_opt, z_three_opt)
+        
+        output_solution(instance_number, sol_two_opt[i], vehicle_capacities, depot, sol_two_opt)
 
 ''' Imprime la solucion en el archivo .sol '''
 def output_solution(instance_number, routes, vehicle_capacities, depot, sol):
@@ -333,15 +332,15 @@ def output_solution(instance_number, routes, vehicle_capacities, depot, sol):
 ''' Calcula la funcion objetivo '''
 def Z(routes, vehicle_capacities, vehicle_velocities, customer_position_demand, depot):
     Z = 0
-    for route_index in routes:
-        routes[route_index].insert(0, depot)
-        total = route_total(routes[route_index], customer_position_demand, depot)
+    for route in routes:
+        route.insert(0, depot)
+        total = route_total(route, customer_position_demand, depot)
         diff = []
         for i in vehicle_capacities:
             diff.append(abs(i - total))
         index = diff.index(min(diff))
         v = 1 / vehicle_velocities[index]
-        for (a, b) in zip(routes[route_index][0:len(routes[route_index]) - 1], routes[route_index][1:]):
+        for (a, b) in zip(route[0:len(route) - 1], route[1:]):
             d = distance(a, b)
             t = d * v
             Z += t
