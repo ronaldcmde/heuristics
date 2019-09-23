@@ -156,14 +156,13 @@ def main():
 
             return z
 
-        ''' metodo recocido simulado '''
+        ''' metodo recocido simulado utilizando el vecindario 2-opt'''
         def simulated_annealing(route, T0=1000, Tf=0.01, r=0.45, L=100):
             solucion_actual = route
             T = T0
             # definir estructura del vecindario y obtener la mejor solucion
             neighboring = two_opt_neighborhood(solucion_actual)
             while(T > Tf):
-                # 2-opt neighborhood
                 l = 0
                 while(l < L):
                     if not neighboring: break
@@ -183,46 +182,60 @@ def main():
             
             return solucion_actual
 
-        ''' metodo recocido simulado '''
+        ''' metodo recocido simulado con vecinos utilizando la estrategia de permutaciones fuerza bruta '''
         def simulated_annealing_with_permutations(route, T0=1000, Tf=0.01, r=0.45, L=100):
             solucion_actual = route
             T = T0
             # definir estructura del vecindario y obtener la mejor solucion
-            neighboring = itertools.permutations(solucion_actual, len(solucion_actual))
+            neighboring = list(itertools.permutations(solucion_actual, len(solucion_actual)))
             while(T > Tf):
-                # 2-opt neighborhood
                 l = 0
                 while(l < L):
                     if not neighboring: break
                     l += 1
-                    new_route = neighboring.pop()
+                    new_route = list(neighboring.pop())
+                    print("new route", new_route)
                     d = route_z(new_route[:]) - route_z(solucion_actual[:])
                     if d < 0:
                         solucion_actual = new_route
-                        neighboring = itertools.permutations(solucion_actual, len(solucion_actual))
+                        neighboring = list(itertools.permutations(solucion_actual, len(solucion_actual)))
                     elif(random.uniform(0, 1) < math.exp(-d/T)):
                         solucion_actual = new_route
-                        neighboring = itertools.permutations(solucion_actual, len(solucion_actual))
+                        neighboring = list(itertools.permutations(solucion_actual, len(solucion_actual)))
                 
                 if not neighboring: break
                 T = r * T
             
             return solucion_actual
 
+        ''' metodo recocido simulado con vecinos utilizando el vecindario 3-opt'''
+        def simulated_annealing_three_opt(route, T0=1000, Tf=0.01, r=0.45, L=100):
+            solucion_actual = route
+            T = T0
+            # definir estructura del vecindario y obtener la mejor solucion
+            while(T > Tf):
+                l = 0
+                while(l < L):
+                    l += 1
+                    new_route = three_opt(solucion_actual) # find s'
+                    d = route_z(new_route[:]) - route_z(solucion_actual[:])
+                    if d < 0:
+                        solucion_actual = new_route
+                    elif(random.uniform(0, 1) < math.exp(-d/T)):
+                        solucion_actual = new_route
+                        
+                T = r * T
+            
+            return solucion_actual
 
         ''' Neighborhood using the 2-opt strategy '''
-        def two_opt_neighborhood(route): 
+        def two_opt_neighborhood(route):
             neighboring = []
             for i in range(0, len(route) - 1):
                 for k in range(i + 1, len(route)):
                     neighboring.append((i, j))
             
             return neighboring
-
-        ''' Neighbothood using the permutations '''
-        def permutations_neighborhood(route):
-            itertools.permutations(route)
-
 
         def two_opt_swap(route, i, k):
             debug = False
@@ -239,6 +252,47 @@ def main():
             if debug: print(new_route)
 
             return new_route
+        
+
+        ''' Neighborhood using the 3-opt strategy '''
+        ''' refer to https://stackoverflow.com/a/31056385/7155066 '''
+        def three_opt(p, broad=False):
+            n = len(p)
+            # choose 3 unique edges defined by their first node
+            a, c, e = random.sample(range(n+1), 3)
+            # without loss of generality, sort
+            a, c, e = sorted([a, c, e])
+            b, d, f = a+1, c+1, e+1
+
+            if broad == True:
+                which = random.randint(0, 7) # allow any of the 8
+            else:
+                which = random.choice([3, 4, 5, 6]) # allow only strict 3-opt
+
+            # in the following slices, the nodes abcdef are referred to by
+            # name. x:y:-1 means step backwards. anything like c+1 or d-1
+            # refers to c or d, but to include the item itself, we use the +1
+            # or -1 in the slice
+            
+            if which == 0:
+                new_route = p[:a+1] + p[b:c+1]    + p[d:e+1]    + p[f:] # identity
+            elif which == 1:
+                new_route = p[:a+1] + p[b:c+1]    + p[e:d-1:-1] + p[f:] # 2-opt
+            elif which == 2:
+                new_route = p[:a+1] + p[c:b-1:-1] + p[d:e+1]    + p[f:] # 2-opt
+            elif which == 3:
+                new_route = p[:a+1] + p[c:b-1:-1] + p[e:d-1:-1] + p[f:] # 3-opt
+            elif which == 4:
+                new_route = p[:a+1] + p[d:e+1]    + p[b:c+1]    + p[f:] # 3-opt
+            elif which == 5:
+                new_route = p[:a+1] + p[d:e+1]    + p[c:b-1:-1] + p[f:] # 3-opt
+            elif which == 6:
+                new_route = p[:a+1] + p[e:d-1:-1] + p[b:c+1]    + p[f:] # 3-opt
+            elif which == 7:
+                new_route = p[:a+1] + p[e:d-1:-1] + p[c:b-1:-1] + p[f:] # 2-opt
+
+            return new_route
+        
 
 
         #check_solution(routes, visited, customer_position_demand, total_capacities, total_velocities, depot, M, time.time() - start_time)
@@ -251,7 +305,7 @@ def main():
             mejor, peor, igual = 0, 0, 0
             for route in instancia:
                 s = route_z(route[:])
-                s_pr = route_z(simulated_annealing(route, T0=1000, Tf=0.01, r=0.95, L=len(route)**2))
+                s_pr = route_z(simulated_annealing_three_opt(route, T0=1000, Tf=0.01, r=0.95, L=len(route)**3))
                 print("antes --> ", s, "depues --> ", s_pr)
                 if(s > s_pr): mejor += 1
                 if(s < s_pr): peor += 1 
