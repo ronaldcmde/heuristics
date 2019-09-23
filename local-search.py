@@ -157,25 +157,27 @@ def main():
             return z
 
         ''' metodo recocido simulado utilizando el vecindario 2-opt'''
-        def simulated_annealing(route, T0=1000, Tf=0.01, r=0.45, L=100):
-            solucion_actual = route
+        def simulated_annealing(route_local, T0=1000, Tf=0.01, r=0.45, L=100):
+            solucion_actual = route_local
             T = T0
             # definir estructura del vecindario y obtener la mejor solucion
-            neighboring = two_opt_neighborhood(solucion_actual)
+            neighboring = two_opt_neighborhood(solucion_actual[:])
             while(T > Tf):
+                print("len de sol act" , len(solucion_actual))
                 l = 0
                 while(l < L):
                     if not neighboring: break
                     l += 1
                     (i, k) = neighboring.pop()
-                    new_route = two_opt_swap(solucion_actual, i, k) # find s'
+                    new_route = two_opt_swap(solucion_actual[:], i, k) # find s'
+                    #print("CALCULATED NEW ROUTE", new_route)
                     d = route_z(new_route[:]) - route_z(solucion_actual[:])
                     if d < 0:
                         solucion_actual = new_route
-                        neighboring = two_opt_neighborhood(solucion_actual)
+                        neighboring = two_opt_neighborhood(solucion_actual[:])
                     elif(random.uniform(0, 1) < math.exp(-d/T)):
                         solucion_actual = new_route
-                        neighboring = two_opt_neighborhood(solucion_actual)
+                        neighboring = two_opt_neighborhood(solucion_actual[:])
                 
                 if not neighboring: break
                 T = r * T
@@ -208,7 +210,7 @@ def main():
             
             return solucion_actual
 
-        ''' metodo recocido simulado con vecinos utilizando el vecindario 3-opt'''
+        ''' metodo recocido simulado con vecinos utilizando el vecindario 3-opt '''
         def simulated_annealing_three_opt(route, T0=1000, Tf=0.01, r=0.45, L=100):
             solucion_actual = route
             T = T0
@@ -229,11 +231,11 @@ def main():
             return solucion_actual
 
         ''' Neighborhood using the 2-opt strategy '''
-        def two_opt_neighborhood(route):
+        def two_opt_neighborhood(route_local):
             neighboring = []
-            for i in range(0, len(route) - 1):
-                for k in range(i + 1, len(route)):
-                    neighboring.append((i, j))
+            for i in range(0, len(route_local) - 1):
+                for k in range(i + 1, len(route_local)):
+                    neighboring.append((i, k))
             
             return neighboring
 
@@ -300,21 +302,23 @@ def main():
         
 
         ''' Algoritmos de busqueda local '''
+        sol_two_opt = dict()
+        sol_three_opt = dict()
         for i in sol: 
             instancia = sol[i]
-            mejor, peor, igual = 0, 0, 0
+            arr_two_opt = []
+            arr_three_opt = []
+            
             for route in instancia:
-                s = route_z(route[:])
-                s_pr = route_z(simulated_annealing_three_opt(route, T0=1000, Tf=0.01, r=0.95, L=len(route)**3))
-                print("antes --> ", s, "depues --> ", s_pr)
-                if(s > s_pr): mejor += 1
-                if(s < s_pr): peor += 1 
-                if(s == s_pr): igual +=1
-
-            print("mejor --> ", mejor)
-            print("peor --> ", peor)
-            print("igual --> ", igual)
-
+                #arr_three_opt.append(simulated_annealing_three_opt(route, T0=1000, Tf=0.01, r=0.95, L=len(route)**3))
+                arr_two_opt.append(simulated_annealing(route, T0=1000, Tf=0.01, r=0.95,L=len(route)**2))
+            
+            sol_three_opt[i] = arr_three_opt
+            sol_two_opt[i] = arr_two_opt
+        
+        #print(sol)
+        #print(sol_two_opt)
+        #print(sol_three_opt)
 
 ''' Imprime la solucion en el archivo .sol '''
 def output_solution(instance_number, routes, vehicle_capacities, depot, sol):
