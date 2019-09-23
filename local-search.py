@@ -296,26 +296,26 @@ def main():
 
         ''' Algoritmos de busqueda local '''
         sol_two_opt = dict()
-        sol_three_opt = dict()
+        #sol_three_opt = dict()
         for i in sol: 
             instancia = sol[i]
             arr_two_opt = []
-            arr_three_opt = []
+            #arr_three_opt = []
 
             for route in instancia:
-                arr_three_opt.append(simulated_annealing_three_opt(route, T0=1000, Tf=0.01, r=0.95, L=len(route)**3))
+                #arr_three_opt.append(simulated_annealing_three_opt(route, T0=1000, Tf=0.01, r=0.95, L=len(route)**3))
                 arr_two_opt.append(simulated_annealing(route, T0=1000, Tf=0.01, r=0.95,L=len(route)**2))
             
-            sol_three_opt[i] = arr_three_opt
+            #sol_three_opt[i] = arr_three_opt
             sol_two_opt[i] = arr_two_opt
         
-        print("sol  2-opt   3-opt")
+        
         for i in sol:
-            z_sol = Z(sol[i], total_capacities, total_velocities, customer_position_demand, depot)
+            #z_sol = Z(sol[i], total_capacities, total_velocities, customer_position_demand, depot)
             z_two_opt = Z(sol_two_opt[i], total_capacities, total_velocities, customer_position_demand, depot)
-            z_three_opt = Z(sol_three_opt[i], total_capacities, total_velocities, customer_position_demand, depot)
+            #z_three_opt = Z(sol_three_opt[i], total_capacities, total_velocities, customer_position_demand, depot)
             
-            print(z_sol, z_two_opt, z_three_opt)
+            #print(z_sol, z_two_opt, z_three_opt)
         
         output_solution(instance_number, sol_two_opt[i], vehicle_capacities, depot, sol_two_opt)
 
