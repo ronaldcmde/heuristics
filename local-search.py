@@ -138,24 +138,6 @@ def main():
                     arr.append(routes[j])
                 sol[i] = (arr)
 
-        ''' Calculates the objective function value for an individual route '''
-        def route_z(route):
-            z = 0
-            route.insert(0, depot) # Add the depot at the begining of the route
-            total = route_total(route, customer_position_demand, depot)
-            diff = []
-            for i in total_capacities:
-                diff.append(abs(i - total))
-            index = diff.index(min(diff))
-
-            v = 1 / total_velocities[index]
-
-            for(a, b) in zip(route[0:len(route) - 1], route[1:]):
-                d = distance(a, b)
-                t = d * v
-                z += t
-
-            return z
 
         ''' metodo recocido simulado utilizando el vecindario 2-opt'''
         def simulated_annealing(route_local, T0=1000, Tf=0.01, r=0.45, L=100):
@@ -170,7 +152,8 @@ def main():
                     l += 1
                     (i, k) = neighboring.pop()
                     new_route = two_opt_swap(solucion_actual[:], i, k) # find s'
-                    d = route_z(new_route[:]) - route_z(solucion_actual[:])
+                    d = (route_z(new_route[:], depot, customer_position_demand, vehicle_capacities, total_velocities) - 
+                        route_z(solucion_actual[:], depot, customer_position_demand, vehicle_capacities, total_velocities))
                     if d < 0:
                         solucion_actual = new_route
                         neighboring = two_opt_neighborhood(solucion_actual[:])
@@ -196,7 +179,8 @@ def main():
                     l += 1
                     new_route = list(neighboring.pop())
                     
-                    d = route_z(new_route[:]) - route_z(solucion_actual[:])
+                    d = (route_z(new_route[:], depot, customer_position_demand, vehicle_capacities, total_velocities) - 
+                        route_z(solucion_actual[:], depot, customer_position_demand, vehicle_capacities, total_velocities))
                     if d < 0:
                         solucion_actual = new_route
                         neighboring = list(itertools.permutations(solucion_actual, len(solucion_actual)))
@@ -219,7 +203,8 @@ def main():
                 while(l < L):
                     l += 1
                     new_route = three_opt(solucion_actual) # find s'
-                    d = route_z(new_route[:]) - route_z(solucion_actual[:])
+                    d = (route_z(new_route[:], depot, customer_position_demand, vehicle_capacities, total_velocities) - 
+                                route_z(solucion_actual[:], depot, customer_position_demand, vehicle_capacities, total_velocities))
                     if d < 0:
                         solucion_actual = new_route
                     elif(random.uniform(0, 1) < math.exp(-d/T)):
@@ -289,12 +274,14 @@ def main():
             return new_route
         
 
-
         #check_solution(routes, visited, customer_position_demand, total_capacities, total_velocities, depot, M, time.time() - start_time)
-        #output_solution(instance_number, routes, vehicle_capacities, depot, sol)
+
+        
+        #output_solution(instance_number, routes, vehicle_capacities, total_velocities, customer_position_demand, depot, sol)
         
 
         ''' Algoritmos de busqueda local '''
+        
         sol_two_opt = dict()
         #sol_three_opt = dict()
         for i in sol: 
@@ -304,34 +291,52 @@ def main():
 
             for route in instancia:
                 #arr_three_opt.append(simulated_annealing_three_opt(route, T0=1000, Tf=0.01, r=0.95, L=len(route)**3))
-                arr_two_opt.append(simulated_annealing(route, T0=1000, Tf=0.01, r=0.95,L=len(route)**2))
+                arr_two_opt.append(simulated_annealing(route, T0=1000, Tf=0.01, r=0.95, L=len(route)))
             
             #sol_three_opt[i] = arr_three_opt
             sol_two_opt[i] = arr_two_opt
         
+        output_solution(instance_number, sol_two_opt[i], vehicle_capacities,total_velocities, customer_position_demand, depot, sol_two_opt)
         
-        for i in sol:
-            #z_sol = Z(sol[i], total_capacities, total_velocities, customer_position_demand, depot)
-            z_two_opt = Z(sol_two_opt[i], total_capacities, total_velocities, customer_position_demand, depot)
-            #z_three_opt = Z(sol_three_opt[i], total_capacities, total_velocities, customer_position_demand, depot)
-            
-            #print(z_sol, z_two_opt, z_three_opt)
-        
-        output_solution(instance_number, sol_two_opt[i], vehicle_capacities, depot, sol_two_opt)
+
+''' Calculates the objective function value for an individual route '''
+def route_z(route, depot, customer_position_demand, total_capacities, total_velocities):
+    z = 0
+    route.insert(0, depot) # Add the depot at the begining of the route
+    total = route_total(route, customer_position_demand, depot)
+    diff = []
+    for i in total_capacities:
+        diff.append(abs(i - total))
+    index = diff.index(min(diff))
+
+    v = 1 / total_velocities[index]
+
+    for(a, b) in zip(route[0:len(route) - 1], route[1:]):
+        d = distance(a, b)
+        t = d * v
+        z += t
+
+    return z
 
 ''' Imprime la solucion en el archivo .sol '''
-def output_solution(instance_number, routes, vehicle_capacities, depot, sol):
+def output_solution(instance_number, routes, vehicle_capacities, vehicle_velocities, customer_position_demand, depot, sol):
+    total = 0
     name = "hfccvrp" + str(instance_number) + ".sol"
     print(name)
-    f= open(name, "w+")
+    f = open(name, "w+")
     for vehicle_type in sol:
         for route in sol[vehicle_type]:
-            f.write(str(vehicle_type) + " " + str(len(route) + 2) + " " + str((depot, route, depot)) + '\n')
+            route_total_z = route_z(route, depot, customer_position_demand, vehicle_capacities, vehicle_velocities)
+            total += route_total_z
+            f.write(str(vehicle_type) + " " + str(len(route) + 2) + " " + str((route, depot)) + " " + str(route_total_z) + '\n')
+    
+    f.write(str(total))
     f.close()
 
 ''' Calcula la funcion objetivo '''
 def Z(routes, vehicle_capacities, vehicle_velocities, customer_position_demand, depot):
     Z = 0
+    total_per_route = []
     for route in routes:
         route.insert(0, depot)
         total = route_total(route, customer_position_demand, depot)
@@ -343,8 +348,9 @@ def Z(routes, vehicle_capacities, vehicle_velocities, customer_position_demand, 
         for (a, b) in zip(route[0:len(route) - 1], route[1:]):
             d = distance(a, b)
             t = d * v
+            total_per_route.append(t)
             Z += t
-    return Z
+    return total_per_route
 
 ''' Helpers para metodo constructivo '''
 def route_total(route, customer_position_demand, depot):
