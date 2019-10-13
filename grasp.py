@@ -49,6 +49,8 @@ def main():
 
         # Improved savings method. Refer to: 
         # http://ieeexplore.ieee.org/document/7784340
+        # This version implements a GRASP savings algorithm using the alpha parameter  alpha [0, 1]
+        alpha = 0.2
         
         # Step 1 & 2-- Calculate savings using distances
         
@@ -65,42 +67,66 @@ def main():
         for i in R:
             K = R[i]
             vehicle_capacities = K['Q']
-            
             vehicle_cap = vehicle_capacities[0]
             success = True
             local_i = 0
+            c_min, c_max = (savings.pop()[1], savings.pop(0)[1])
+
             while(success and (False in visited.values() and local_i <= len(vehicle_capacities))):
                 # Step 3 -- Choose two customers for the initial route
-                for c in cost_pairs:
-                    if (visited[c[0]] == False and visited[c[1]] == False):
-                        visited[c[0]], visited[c[1]] = (True, True)
-                        local_i += 1
-                        idx += 1
-                        routes[idx] = ([c[0],c[1]])
-                        success = True
-                        break
-                    else: success = False     
+                for c in random.sample(cost_pairs, k=len(cost_pairs)): # randmoize the selection of the cost pair.
+                    C = saving(depot, c[0], c[1]) # Thresold value
+                    if(C >= c_min and C <= c_min + (alpha * (c_max - c_min))): 
+                        if (visited[c[0]] == False and visited[c[1]] == False):
+                            if(C >= c_min and C <= c_min + (alpha * (c_max - c_min))): # check quality superior to thresold value
+                                visited[c[0]], visited[c[1]] = (True, True)
+                                cost_pairs.pop(cost_pairs.index(c))
+                                c_min, c_max = (savings.pop()[1], savings.pop(0)[1])
+                                local_i += 1
+                                idx += 1
+                                routes[idx] = ([c[0],c[1]])
+                                success = True
+                                break
+                        else: success = False
                 
                 if (not success): continue
                 
                 # Step 4 -- Finding a feasible cost that is either at the start or end of previous route
                 
-                for c in cost_pairs:
+                for c in random.sample(cost_pairs, k=len(cost_pairs)): # randmoize the selection of the cost pair.
                     res = in_previous(c[0], routes[idx])
+                    C = saving(depot, c[0], c[1]) # Thresold value
                     if (res == 0 and capacity_valid(routes[idx], c[0], customer_position_demand, vehicle_cap) and visited[c[0]] == False):
-                        visited[c[1]] = True
-                        routes[idx].append(c[1])
+                        if(C >= c_min and C <= c_min + (alpha * (c_max - c_min))): # check quality superior to thresold value
+                            visited[c[1]] = True
+                            
+                            routes[idx].append(c[1])
+                            cost_pairs.pop(cost_pairs.index(c))
+                            c_min, c_max = (savings.pop()[1], savings.pop(0)[1])
                     elif (res == 1 and capacity_valid(routes[idx], c[0], customer_position_demand, vehicle_cap) and visited[c[0]] == False):
-                        visited[c[1]] = True
-                        routes[idx].insert(0, c[1])
+                        if(C >= c_min and C <= c_min + (alpha * (c_max - c_min))): # check quality superior to thresold value
+                            visited[c[1]] = True
+                            
+                            routes[idx].insert(0, c[1])
+                            cost_pairs.pop(cost_pairs.index(c))
+                            c_min, c_max = (savings.pop()[1], savings.pop(0)[1])
                     else: 
                         res = in_previous(c[1], routes[idx])
                         if (res == 0 and capacity_valid(routes[idx], c[0], customer_position_demand, vehicle_cap) and visited[c[0]] == False):
-                            visited[c[0]] = True
-                            routes[idx].append(c[0])
+                            if(C >= c_min and C <= c_min + (alpha * (c_max - c_min))): # check quality superior to thresold value
+                                visited[c[0]] = True
+                                
+                                routes[idx].append(c[0])
+                                cost_pairs.pop(cost_pairs.index(c))
+                                c_min, c_max = (savings.pop()[1], savings.pop(0)[1])
                         elif (res == 1 and capacity_valid(routes[idx], c[0], customer_position_demand, vehicle_cap) and visited[c[0]] == False):
-                            visited[c[0]] = True
-                            routes[idx].insert(0, c[0])
+                            if(C >= c_min and C <= c_min + (alpha * (c_max - c_min))): # check quality superior to thresold value
+                                visited[c[0]] = True
+                                
+                                routes[idx].insert(0, c[0])
+                                cost_pairs.pop(cost_pairs.index(c))
+                                c_min, c_max = (savings.pop()[1], savings.pop(0)[1])
+                    
 
                 # Step 5 -- Repeat 4 till no customer can be added to the route (for)
         
@@ -159,9 +185,11 @@ def main():
                         costs.append(distance(a, b))
                     mean = sum(costs) / len(costs)
                     std = math.sqrt(sum([(x - mean)**2 for x in costs]) / (len(costs) - 1))
+
                     d = (route_z(new_route[:], depot, customer_position_demand, vehicle_capacities, total_velocities) - 
                         route_z(solucion_actual[:], depot, customer_position_demand, vehicle_capacities, total_velocities) +
                         random.gauss(0, std))
+                        
                     
                     if d < 0:
                         solucion_actual = new_route
@@ -187,8 +215,15 @@ def main():
                     new_route = three_opt(solucion_actual) # find s'
                     
                     ''' Here we add the noise  '''
+                    costs = []
+                    for(a, b) in zip(new_route[0:len(new_route) - 1], new_route[1:]):
+                        costs.append(distance(a, b))
+                    mean = sum(costs) / len(costs)
+                    std = math.sqrt(sum([(x - mean)**2 for x in costs]) / (len(costs) - 1))
+
                     d = (route_z(new_route[:], depot, customer_position_demand, vehicle_capacities, total_velocities) - 
-                                route_z(solucion_actual[:], depot, customer_position_demand, vehicle_capacities, total_velocities))
+                        route_z(solucion_actual[:], depot, customer_position_demand, vehicle_capacities, total_velocities) +
+                        random.gauss(0, std))
                     
                     if d < 0:
                         solucion_actual = new_route
