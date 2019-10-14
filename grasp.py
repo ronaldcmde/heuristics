@@ -26,19 +26,13 @@ def main():
         depot = customer_positions[0]
         points_len = len(customer_positions)
 
-        # None of the customers have been visited
-        visited = dict()
-        for c in demand_nodes: visited[c] = False
 
         # build (x, y) -> demand
         customer_position_demand = dict()
         for (coord, demand) in zip(demand_nodes, demands[1:]):
             customer_position_demand[coord] = demand
 
-        routes = dict()
-        idx = -1 # route number
-
-
+    
         M = 0
         total_capacities = []
         total_velocities = []
@@ -50,17 +44,22 @@ def main():
         # Improved savings method. Refer to: 
         # http://ieeexplore.ieee.org/document/7784340
         # This version implements a GRASP savings algorithm using the alpha parameter  alpha [0, 1]
-        alpha = 0.5
+        alpha = 0.1
         niter = 1
         
         # Step 1 & 2-- Calculate savings using distances
         soluciones = dict()
         for i_iter in range(0, niter): 
+            
+            # None of the customers have been visited
+            visited = dict()
+            for c in demand_nodes: visited[c] = False
+        
             # Initialization
             savings = calculate_savings(depot, demand_nodes)
             savings = sorted(savings.items(),key=operator.itemgetter(1),reverse=True)
+            
             cost_pairs = list()
-
             for k in range(len(savings)):
                 cost_pairs.append(savings[k][0])
         
@@ -73,29 +72,29 @@ def main():
                 success = True
                 local_i = 0
                 c_min, c_max = (savings.pop()[1], savings.pop(0)[1])
-
-                while(success and (False in visited.values() and local_i <= len(vehicle_capacities))):
+                routes = dict()
+                idx = -1 # route number
+                while(success and (False in visited.values() and local_i < len(vehicle_capacities))):
                     # Step 3 -- Choose two customers for the initial route
                     for c in random.sample(cost_pairs, k=len(cost_pairs)): # randomize the selection of the cost pair.
                         C = saving(depot, c[0], c[1]) # Thresold value
-                        if(C >= c_min and C <= c_min + (alpha * (c_max - c_min))): 
-                            if (visited[c[0]] == False and visited[c[1]] == False):
-                                if(C >= c_min and C <= c_min + (alpha * (c_max - c_min))): # check quality superior to thresold value
-                                    visited[c[0]], visited[c[1]] = (True, True)
-                                    cost_pairs.pop(cost_pairs.index(c))
-                                    c_min, c_max = (savings.pop()[1], savings.pop(0)[1])
-                                    local_i += 1
-                                    idx += 1
-                                    routes[idx] = ([c[0],c[1]])
-                                    success = True
-                                    break
-                            else: success = False
+                        if (visited[c[0]] == False and visited[c[1]] == False):
+                            if(C >= c_min and C <= c_min + (alpha * (c_max - c_min))): # check quality superior to thresold value
+                                visited[c[0]], visited[c[1]] = (True, True)
+                                cost_pairs.pop(cost_pairs.index(c))
+                                c_min, c_max = (savings.pop()[1], savings.pop(0)[1])
+                                local_i += 1
+                                idx += 1
+                                routes[idx] = ([c[0],c[1]])
+                                success = True
+                                break
+                        else: success = False
                     
                     if (not success): continue
                     
                     # Step 4 -- Finding a feasible cost that is either at the start or end of previous route
                     
-                    for c in random.sample(cost_pairs, k=len(cost_pairs)): # randmoize the selection of the cost pair.
+                    for c in random.sample(cost_pairs, k=len(cost_pairs)): # randomize the selection of the cost pair.
                         res = in_previous(c[0], routes[idx])
                         C = saving(depot, c[0], c[1]) # Thresold value
                         if (res == 0 and capacity_valid(routes[idx], c[0], customer_position_demand, vehicle_cap) and visited[c[0]] == False):
@@ -159,15 +158,13 @@ def main():
                     # Step 6 -- Repeat 3, 4, 5 till all customers are added to some route (go to while)
                     
                     
-                    # add the calculated routes to the entire solution
-                    
-                    arr = []
-                    for j in routes:
-                        arr.append(routes[j])
-                    sol_i[i] = (arr)
+                # add the calculated routes to the entire solution
+                arr = []
+                
+                for j in routes:
+                    arr.append(routes[j])
+                sol_i[i] = (arr)
 
-    
-            
 
             ''' Algoritmos de busqueda local '''
             for i in sol_i:
@@ -350,7 +347,6 @@ def route_z(route, depot, customer_position_demand, total_capacities, total_velo
 
 ''' Imprime la solucion en el archivo .sol '''
 def output_solution(instance_number, vehicle_capacities, vehicle_velocities, customer_position_demand, depot, sol):
-    
     total = 0
     name = "hfccvrp" + str(instance_number) + ".sol"
     print(name)
@@ -359,7 +355,7 @@ def output_solution(instance_number, vehicle_capacities, vehicle_velocities, cus
         for route in sol[vehicle_type]:
             route_total_z = route_z(route, depot, customer_position_demand, vehicle_capacities, vehicle_velocities)
             total += route_total_z
-            f.write(str(vehicle_type) + " " + str(len(route) + 2) + " " + str((route, depot)) + " " + str(route_total_z) + '\n')
+            f.write(str(vehicle_type) + " " + str(len(route) - 1) + " " + str((route, depot)) + " " + str(route_total_z) + '\n')
     f.write(str(total))
     f.close()
 
