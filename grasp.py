@@ -8,9 +8,9 @@ import math
 import operator
 import time
 import random
+import sys
 
-
-directory = "test/"
+directory = "resources/"
 
 def main():
     instance_number = 0
@@ -44,8 +44,8 @@ def main():
         # Improved savings method. Refer to: 
         # http://ieeexplore.ieee.org/document/7784340
         # This version implements a GRASP savings algorithm using the alpha parameter  alpha [0, 1]
-        alpha = 0.1
-        niter = 1
+        alpha = float(sys.argv[1])
+        niter = int(sys.argv[2])
         
         # Step 1 & 2-- Calculate savings using distances
         soluciones = dict()
@@ -74,7 +74,7 @@ def main():
                 c_min, c_max = (savings.pop()[1], savings.pop(0)[1])
                 routes = dict()
                 idx = -1 # route number
-                while(success and (False in visited.values() and local_i < len(vehicle_capacities))):
+                while (success and (False in visited.values() and local_i < len(vehicle_capacities))):
                     # Step 3 -- Choose two customers for the initial route
                     for c in random.sample(cost_pairs, k=len(cost_pairs)): # randomize the selection of the cost pair.
                         C = saving(depot, c[0], c[1]) # Thresold value
@@ -196,7 +196,7 @@ def main():
                 else: 
                     soluciones[i] = arr_two_opt
                 
-        output_solution(instance_number, vehicle_capacities, total_velocities, customer_position_demand, depot, soluciones)
+        output_solution(instance_number, vehicle_capacities, total_velocities, customer_position_demand, depot, soluciones, time.time() - start_time)
 
 
 ''' metodo recocido simulado utilizando el vecindario 2-opt'''
@@ -346,10 +346,10 @@ def route_z(route, depot, customer_position_demand, total_capacities, total_velo
     return z
 
 ''' Imprime la solucion en el archivo .sol '''
-def output_solution(instance_number, vehicle_capacities, vehicle_velocities, customer_position_demand, depot, sol):
+def output_solution(instance_number, vehicle_capacities, vehicle_velocities, customer_position_demand, depot, sol, time):
     total = 0
     name = "hfccvrp" + str(instance_number) + ".sol"
-    print(name)
+    print(name, time)
     f = open(name, "w+")
     for vehicle_type in sol:
         for route in sol[vehicle_type]:
@@ -502,4 +502,5 @@ def saving(depot, i, j):
     Entry point
 '''
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) < 3: print("""Usage: \n  grasp.py alpha niter""".strip())
+    else: main()

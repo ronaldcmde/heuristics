@@ -274,7 +274,7 @@ def main():
             return new_route
         
 
-        #check_solution(routes, visited, customer_position_demand, total_capacities, total_velocities, depot, M, time.time() - start_time)
+        
 
         
         #output_solution(instance_number, routes, vehicle_capacities, total_velocities, customer_position_demand, depot, sol)
@@ -296,6 +296,7 @@ def main():
             #sol_three_opt[i] = arr_three_opt
             sol_two_opt[i] = arr_two_opt
         
+        check_solution(routes, visited, customer_position_demand, total_capacities, total_velocities, depot, M, time.time() - start_time)
         output_solution(instance_number, sol_two_opt[i], vehicle_capacities,total_velocities, customer_position_demand, depot, sol_two_opt)
         
 

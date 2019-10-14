@@ -158,7 +158,7 @@ def main():
                     for(a, b) in zip(new_route[0:len(new_route) - 1], new_route[1:]):
                         costs.append(distance(a, b))
                     mean = sum(costs) / len(costs)
-                    std = math.sqrt(sum([(x - mean)**2 for x in costs]) / (len(costs) - 1))
+                    std = math.sqrt(sum([(x - mean)**2 for x in costs]) / (len(costs) - 1)) if len(costs) > 1 else 1
                     d = (route_z(new_route[:], depot, customer_position_demand, vehicle_capacities, total_velocities) - 
                         route_z(solucion_actual[:], depot, customer_position_demand, vehicle_capacities, total_velocities) +
                         random.gauss(0, std))
