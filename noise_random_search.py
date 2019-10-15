@@ -152,41 +152,23 @@ def main():
                     l += 1
                     (i, k) = neighboring.pop()
                     new_route = two_opt_swap(solucion_actual[:], i, k) # find s'
-                    d = (route_z(new_route[:], depot, customer_position_demand, vehicle_capacities, total_velocities) - 
-                        route_z(solucion_actual[:], depot, customer_position_demand, vehicle_capacities, total_velocities))
-                    if d < 0:
-                        solucion_actual = new_route
-                        neighboring = two_opt_neighborhood(solucion_actual[:])
-                    elif(random.uniform(0, 1) < math.exp(-d/T)):
-                        solucion_actual = new_route
-                        neighboring = two_opt_neighborhood(solucion_actual[:])
-                
-                if not neighboring: break
-                T = r * T
-            
-            return solucion_actual
-
-        ''' metodo recocido simulado con vecinos utilizando la estrategia de permutaciones fuerza bruta '''
-        def simulated_annealing_with_permutations(route, T0=1000, Tf=0.01, r=0.45, L=100):
-            solucion_actual = route
-            T = T0
-            # definir estructura del vecindario y obtener la mejor solucion
-            neighboring = list(itertools.permutations(solucion_actual, len(solucion_actual)))
-            while(T > Tf):
-                l = 0
-                while(l < L):
-                    if not neighboring: break
-                    l += 1
-                    new_route = list(neighboring.pop())
                     
+                    ''' Here we add the noise  '''
+                    costs = []
+                    for(a, b) in zip(new_route[0:len(new_route) - 1], new_route[1:]):
+                        costs.append(distance(a, b))
+                    mean = sum(costs) / len(costs)
+                    std = math.sqrt(sum([(x - mean)**2 for x in costs]) / (len(costs) - 1)) if len(costs) > 1 else 1
                     d = (route_z(new_route[:], depot, customer_position_demand, vehicle_capacities, total_velocities) - 
-                        route_z(solucion_actual[:], depot, customer_position_demand, vehicle_capacities, total_velocities))
+                        route_z(solucion_actual[:], depot, customer_position_demand, vehicle_capacities, total_velocities) +
+                        random.gauss(0, std))
+                    
                     if d < 0:
                         solucion_actual = new_route
-                        neighboring = list(itertools.permutations(solucion_actual, len(solucion_actual)))
+                        neighboring = two_opt_neighborhood(solucion_actual[:])
                     elif(random.uniform(0, 1) < math.exp(-d/T)):
                         solucion_actual = new_route
-                        neighboring = list(itertools.permutations(solucion_actual, len(solucion_actual)))
+                        neighboring = two_opt_neighborhood(solucion_actual[:])
                 
                 if not neighboring: break
                 T = r * T
@@ -200,14 +182,17 @@ def main():
             # definir estructura del vecindario y obtener la mejor solucion
             while(T > Tf):
                 l = 0
-                while(l < L):
+                while (l < L):
                     l += 1
                     new_route = three_opt(solucion_actual) # find s'
+                    
+                    ''' Here we add the noise  '''
                     d = (route_z(new_route[:], depot, customer_position_demand, vehicle_capacities, total_velocities) - 
                                 route_z(solucion_actual[:], depot, customer_position_demand, vehicle_capacities, total_velocities))
+                    
                     if d < 0:
                         solucion_actual = new_route
-                    elif(random.uniform(0, 1) < math.exp(-d/T)):
+                    elif (random.uniform(0, 1) < math.exp(-d/T)):
                         solucion_actual = new_route
                         
                 T = r * T
@@ -274,7 +259,7 @@ def main():
             return new_route
         
 
-        
+        #check_solution(routes, visited, customer_position_demand, total_capacities, total_velocities, depot, M, time.time() - start_time)
 
         
         #output_solution(instance_number, routes, vehicle_capacities, total_velocities, customer_position_demand, depot, sol)
@@ -282,7 +267,7 @@ def main():
 
         ''' Algoritmos de busqueda local '''
         
-        sol_two_opt = dict()
+        sol_two_opt = dict() 
         #sol_three_opt = dict()
         for i in sol: 
             instancia = sol[i]
@@ -291,12 +276,11 @@ def main():
 
             for route in instancia:
                 #arr_three_opt.append(simulated_annealing_three_opt(route, T0=1000, Tf=0.01, r=0.95, L=len(route)**3))
-                arr_two_opt.append(simulated_annealing(route, T0=1000, Tf=0.01, r=0.95,L=len(route)))
+                arr_two_opt.append(simulated_annealing(route, T0=1000, Tf=0.01, r=0.95, L=len(route)))
             
             #sol_three_opt[i] = arr_three_opt
             sol_two_opt[i] = arr_two_opt
         
-        check_solution(routes, visited, customer_position_demand, total_capacities, total_velocities, depot, M, time.time() - start_time)
         output_solution(instance_number, sol_two_opt[i], vehicle_capacities,total_velocities, customer_position_demand, depot, sol_two_opt)
         
 
